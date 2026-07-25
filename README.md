@@ -72,16 +72,11 @@ terraform apply
 
 ## CI/CD
 
-Pipeline em [.github/workflows/terraform.yml](.github/workflows/terraform.yml), acionado por PR (plan) e push (apply) nas branches `master` e `producao`:
-
-| Branch | Ação |
-|---|---|
-| `master` | `terraform plan` em PR — nenhum apply |
-| `producao` | `terraform apply` automático ao dar push, gated por aprovação manual do GitHub Environment `producao` |
+Pipeline em [.github/workflows/terraform.yml](.github/workflows/terraform.yml), acionado em `main`: PR roda `terraform plan`, push roda `terraform apply` (gated por aprovação manual do GitHub Environment `producao`, que se refere ao ambiente AWS de destino, não a uma branch).
 
 Autenticação com a AWS via credenciais estáticas de sessão do AWS Academy (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` como GitHub Secrets) — expiram com a sessão do Lab, precisam ser atualizadas manualmente antes de cada rodada de CI/CD.
 
-`master` e `producao` exigem Pull Request para merge (proteção de branch configurada diretamente no GitHub).
+`main` exige Pull Request para merge (proteção de branch configurada diretamente no GitHub).
 
 ## Links
 
