@@ -12,9 +12,11 @@ terraform {
     }
   }
 
-  # Backend remoto — state compartilhado entre execuções de CI/CD.
-  # Bucket e tabela de lock são provisionados manualmente uma única vez
-  # (fora do escopo deste repositório, ver README > "Backend remoto").
+  # Backend remoto — state compartilhado entre execuções de CI/CD (a AWS
+  # Academy reseta a conta entre sessões, então bucket/tabela não podem
+  # depender de terem sido criados manualmente uma única vez). O workflow
+  # (.github/workflows/terraform.yml) cria bucket e tabela se não existirem,
+  # antes do terraform init — idempotente, roda em todo PR/push.
   backend "s3" {
     bucket         = "soat-tech-challenge-tfstate"
     key            = "infra-database/terraform.tfstate"
