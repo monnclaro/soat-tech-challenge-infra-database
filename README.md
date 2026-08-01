@@ -58,7 +58,7 @@ Por que a VPC não é criada aqui: para não ter dois repositórios Terraform ad
 
 ## Backend remoto
 
-O state fica em S3 (`soat-tech-challenge-tfstate`) com lock via DynamoDB (`soat-tech-challenge-tfstate-lock`), compartilhado entre execuções de CI/CD. Esses dois recursos ficam fora do Terraform gerenciado por este repo — do contrário seria "quem provisiona o backend do próprio backend" — mas **não** são um bootstrap manual único: como a AWS Academy reseta a conta entre sessões, o workflow (`.github/workflows/terraform.yml`) cria bucket e tabela automaticamente, se não existirem, antes de cada `terraform init`. Rodando localmente (fora do CI/CD), você precisa criá-los manualmente antes do primeiro `terraform init` (`aws s3api create-bucket`/`aws dynamodb create-table`, mesmos nomes acima).
+O state fica em S3 (`soat-tech-challenge-tfstate-augusto`) com lock via DynamoDB (`soat-tech-challenge-tfstate-lock-augusto`), compartilhado entre execuções de CI/CD. Esses dois recursos ficam fora do Terraform gerenciado por este repo — do contrário seria "quem provisiona o backend do próprio backend" — mas **não** são um bootstrap manual único: como a AWS Academy reseta a conta entre sessões, o workflow (`.github/workflows/terraform.yml`) cria bucket e tabela automaticamente, se não existirem, antes de cada `terraform init`. Rodando localmente (fora do CI/CD), você precisa criá-los manualmente antes do primeiro `terraform init` (`aws s3api create-bucket`/`aws dynamodb create-table`, mesmos nomes acima).
 
 ## Execução
 
