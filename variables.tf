@@ -36,9 +36,13 @@ variable "db_username" {
 }
 
 variable "engine_version" {
-  description = "Versão do PostgreSQL."
+  # Só a versão major (não "16.4" ou similar): a AWS aposenta minor versions
+  # antigas periodicamente ("Cannot find version X.Y for postgres"), e pinar
+  # um minor específico quebra o apply quando isso acontece. Com só "16", a
+  # AWS resolve para o minor mais recente disponível no momento da criação.
+  description = "Versão major do PostgreSQL (ex.: \"16\") — a AWS resolve o minor mais recente disponível."
   type        = string
-  default     = "16.4"
+  default     = "16"
 }
 
 variable "instance_class" {
