@@ -59,12 +59,15 @@ resource "aws_db_subnet_group" "this" {
 # Senha gerada pelo Terraform e guardada só como SSM SecureString — nunca sai
 # como output em texto plano nem fica em .tfvars versionado.
 resource "random_password" "master" {
-  length      = 32
-  special     = true
-  min_upper   = 2
-  min_lower   = 2
-  min_numeric = 2
-  min_special = 2
+  length  = 32
+  special = true
+  # Conjunto padrão de especiais do provider inclui "@", proibido pelo RDS
+  # (MasterUserPassword não aceita '/', '@', '"' nem espaço) — removido aqui.
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+  min_upper        = 2
+  min_lower        = 2
+  min_numeric      = 2
+  min_special      = 2
 }
 
 resource "aws_ssm_parameter" "db_password" {
