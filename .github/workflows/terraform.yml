@@ -121,13 +121,16 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
-      # O AWS Academy reseta a conta periodicamente (apaga EC2/RDS/etc., que custam
-      # dinheiro) mas não limpa o SSM Parameter Store (gratuito) — depois de um reset, o
-      # Terraform começa com state vazio e tenta recriar esses 5 parâmetros que já
-      # sobreviveram do antes do reset, falhando com "ParameterAlreadyExists" (mesmo
-      # problema já visto no infra-k8s). "import" só ensina o Terraform sobre o que já
-      # existe, sem alterar valor; "|| true" torna seguro rodar em toda apply.
-      - name: Importar parâmetros SSM que já existem (corrige drift de state)
+      # O AWS Academy reseta a conta periodicamente (apaga a instância RDS, que é
+      # cobrada por hora) mas não limpa recursos gratuitos (SSM Parameter Store, DB
+      # Parameter Group, DB Subnet Group) — depois de um reset, o Terraform começa com
+      # state vazio e tenta recriar esses recursos que sobreviveram, falhando com
+      # "...AlreadyExists" (mesmo problema já visto no infra-k8s). "import" só ensina o
+      # Terraform sobre o que já existe, sem alterar valor; "|| true" torna seguro rodar
+      # em toda apply. O Security Group (aws_security_group.rds) não está na lista: o ID
+      # de import dele não é previsível a partir do nome — se também tiver sobrado,
+      # vai aparecer um erro "InvalidGroup.Duplicate" novo pra adicionar aqui.
+      - name: Importar recursos que já existem (corrige drift de state)
         run: |
           import() { terraform import -input=false "$1" "$2" || true; }
 
@@ -136,6 +139,8 @@ jobs:
           import aws_ssm_parameter.db_port /soat/producao/rds/port
           import aws_ssm_parameter.db_name /soat/producao/rds/db-name
           import aws_ssm_parameter.db_username /soat/producao/rds/username
+          import aws_db_parameter_group.this soat-rds-producao
+          import aws_db_subnet_group.this soat-rds-producao
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false -lock-timeout=5m
