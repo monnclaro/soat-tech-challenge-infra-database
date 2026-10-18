@@ -6,6 +6,14 @@ on:
   push:
     branches: [main]
 
+# Sem isso, merges em sequência rápida disparavam applies sobrepostos, cada um
+# brigando pelo lock do DynamoDB do mesmo state — um deles sempre falhava com
+# "Error acquiring the state lock" (mesmo problema já corrigido no infra-k8s).
+# Só roda um apply por vez — os outros esperam na fila em vez de colidir.
+concurrency:
+  group: terraform-infra-database
+  cancel-in-progress: false
+
 # AWS Academy: credenciais de sessão temporárias (expiram com o Lab), não
 # suporta OIDC nem IAM role de longa duração — ver README > "AWS Academy".
 env:
@@ -66,7 +74,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -input=false -no-color -out=tfplan
+        run: terraform plan -input=false -no-color -lock-timeout=5m -out=tfplan
 
   apply:
     name: Apply
@@ -113,5 +121,21 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
+      # O AWS Academy reseta a conta periodicamente (apaga EC2/RDS/etc., que custam
+      # dinheiro) mas não limpa o SSM Parameter Store (gratuito) — depois de um reset, o
+      # Terraform começa com state vazio e tenta recriar esses 5 parâmetros que já
+      # sobreviveram do antes do reset, falhando com "ParameterAlreadyExists" (mesmo
+      # problema já visto no infra-k8s). "import" só ensina o Terraform sobre o que já
+      # existe, sem alterar valor; "|| true" torna seguro rodar em toda apply.
+      - name: Importar parâmetros SSM que já existem (corrige drift de state)
+        run: |
+          import() { terraform import -input=false "$1" "$2" || true; }
+
+          import aws_ssm_parameter.db_password /soat/producao/rds/password
+          import aws_ssm_parameter.db_endpoint /soat/producao/rds/endpoint
+          import aws_ssm_parameter.db_port /soat/producao/rds/port
+          import aws_ssm_parameter.db_name /soat/producao/rds/db-name
+          import aws_ssm_parameter.db_username /soat/producao/rds/username
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -lock-timeout=5m
